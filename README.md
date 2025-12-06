@@ -1,2 +1,25 @@
 # go
-A you OK
+## Web 工具箱和个人博客
+
+这个项目旨在创建一个基于网页的工具箱和个人博客。工具箱将包含各种实用工具以提高生产力，而博客将作为分享知识和想法的平台。
+
+### 功能
+- **工具箱**: 一个用于日常任务的网页工具集合。
+- **博客**: 一个用于分享文章和教程的个人博客。
+
+### 快速开始
+1. 克隆仓库：
+    ```bash
+    git clone https://github.com/your-username/your-repo.git
+    ```
+2. 进入项目目录：
+    ```bash
+    cd your-repo
+    ```
+3. 按照 `docs/SETUP.md` 文件中的设置说明进行操作。
+
+### 贡献
+欢迎贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 文件以了解贡献指南。
+
+### 许可证
+此项目使用 [MIT 许可证](LICENSE) 进行许可。
