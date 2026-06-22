@@ -17,7 +17,10 @@ let adb = prompt(`猜数字：共有${cs+1}次机会,请输入数字1~100`)
         while(io != 0){
             
             if (adb == shu){
-                document.write(`<h1 style="background-color:rgb(100,100,255); color:rgb(0,255,0);text-align: center;">当猜到啦！</h1><h2>当前数为：${adb}</h2>`)
+                document.write(`<h1 style="background-color:rgb(100,100,255); color:rgb(0,255,0);text-align: center;">当猜到啦！</h1><h2>当前数为：${adb}</h2>
+                <a href="./猜数字游戏.html">再来一次</a>
+                <a href="../index.html">←<返回首页</a>
+                `)
                     io = 0
                 }else if(cs>0){ 
                     if(adb > shu){
