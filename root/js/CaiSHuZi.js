@@ -1,0 +1,32 @@
+// 12.编写一个程序，模拟猜数字游戏，随机生成一个1~100的数字，通过输人猜测，最多可猜测5次，给出相应提示。
+   
+
+let io = 1;
+let shu =parseInt(Math.random() * 100)+1;//生成一个1~100的随机数
+let cs =4
+let adb = prompt(`猜数字：共有${cs+1}次机会,请输入数字1~100`)
+        while(io != 0){
+            
+            if (adb == shu){
+                document.write(`<h1 style="background-color:rgb(100,100,255); color:rgb(0,255,0);text-align: center;">当猜到啦！</h1><h2>当前数为：${adb}</h2>
+                <a href="./猜数字游戏.html">再来一次</a></br>
+                <a href="../index.html">←<返回首页</a>
+                `)
+                    io = 0
+                }else if(cs>0){ 
+                    if(adb > shu){
+                        adb = prompt(`猜数字：上次输入的是:${adb}大了：还有${cs}次机会`)
+                        cs=cs-1
+                    }else if(adb < shu){
+                        adb = prompt(`猜数字：上次输入的是:${adb}小了：还有${cs}次机会`)
+                        cs=cs-1
+                    }
+                }else if(cs==0){
+                document.write(`<h1 style="background-color:rgb(255,200,100); color:rgb(0,200,0);text-align: center;">次数用完了</h1>
+                <h2>当前数为：${adb}>>源随机数是：${shu}</h2>
+                <a href="./猜数字游戏.html">再来一次</a></br>
+                <a href="../index.html">←<返回首页</a>
+                `)
+                io =0
+                }
+        }
