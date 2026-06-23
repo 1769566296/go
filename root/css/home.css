@@ -1,5 +1,11 @@
 *{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
     font-family: "楷体",sans-serif;
+}
+body{
+    padding: 24px;
 }
 img{
     max-width: 90%;
@@ -11,4 +17,17 @@ img{
 a{
     font-size: 20px;
     color: #6625cc;
+    /* 取消默认下划线 */
+    text-decoration: none;
+    /* 给背景留出内边距，色块不会紧贴文字 */
+    padding: 2px 6px;
+    /* 过渡动画，背景色平滑变化 */
+    transition: background-color 0.2s ease;
+}
+/* 鼠标悬浮样式 */
+a:hover{
+    color: #451896;
+    background-color: #bbdfff;
+    text-decoration: none;
+    border-radius: 4px;
 }
