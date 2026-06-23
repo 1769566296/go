@@ -1,0 +1,14 @@
+*{
+    font-family: "楷体",sans-serif;
+}
+img{
+    max-width: 90%;
+    border-radius: 12px;
+    display:block;
+    margin: 20px auto;
+    box-shadow: 0 2px 12px #ddd;
+}
+a{
+    font-size: 20px;
+    color: #6625cc;
+}
