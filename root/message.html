@@ -143,6 +143,10 @@ renderMsg();
 
 // 5. 提交留言按钮点击事件
 submitBtn.onclick = async function(){
+    // 锁定按钮[避免重复提交]
+    submitBtn.disabled = true;
+    submitBtn.innerText = "提交中...";
+    
     let nameVal = username.value.trim();
     let textVal = content.value.trim();
 
@@ -170,6 +174,9 @@ submitBtn.onclick = async function(){
     username.value = '';
     content.value = '';
     renderMsg();
+    // 解锁按钮
+    submitBtn.disabled = false;
+    submitBtn.innerText = "提交留言";
 }
 </script>
 </body>
