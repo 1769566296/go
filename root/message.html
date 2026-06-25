@@ -65,14 +65,40 @@
             color: #888;
             margin-left: 10px;
         }
+        /* 置顶标签样式 */
+.msg-top-tag {
+    color: #ff3333;
+    border: 1px solid #ff3333;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+/* 点赞按钮样式 */
+.like-btn {
+    margin-top: 8px;
+    background: #fff;
+    color: #6625cc;
+    border: 1px solid #6625cc;
+    padding: 4px 12px;
+    font-size: 14px;
+}
+.like-btn:hover {
+    background: #f3eeff;
+}
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1>留言板</h1>
-        <h3>欢迎大家留言</h3>
-        <a href="../index.html">← 返回首页</a>
-        <hr style="margin:20px 0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <h1>留言板</h1>
+            <h3>欢迎大家留言</h3>
+        </div>
+        <!-- 管理面板入口 -->
+        <a href="./admin.html" style="font-size:16px;font-weight:bold;">留言管理面板</a>
+    </div>
+<a href="../index.html">←<返回首页</a>
+            <hr style="margin:20px 0;">
 
         <!-- 留言提交表单区域 -->
         <div class="form">
@@ -129,12 +155,35 @@ async function renderMsg() {
         const div = document.createElement('div');
         div.className = 'msg-item';
         const time = new Date(item.created_at).toLocaleString();
-        div.innerHTML = `
+        // 循环渲染留言 html
+    div.innerHTML = `
+        <div>
+            ${item.is_top ? '<span class="msg-top-tag">置顶</span>' : ''}
             <span class="msg-name">${item.nickname}</span>
             <span class="msg-time">${time}</span>
-            <p>${item.content}</p>
-        `;
+        </div>
+        <p>${item.content}</p>
+        <button class="like-btn" data-id="${item.id}" data-like="${item.like_count}">
+            👍 点赞 <span class="like-num">${item.like_count}</span>
+        </button>
+    `;
+        
         msgList.appendChild(div);
+    // 给所有点赞按钮绑定点击事件
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        btn.onclick = async function () {
+            const msgId = this.dataset.id;
+            const oldLikeNum = Number(this.dataset.like);
+            const newLikeNum = oldLikeNum + 1;
+            // 更新云端点赞数字
+            const { error } = await sb
+                .from('messages')
+                .update({ like_count: newLikeNum })
+                .eq('id', msgId);
+            // 更新成功后刷新留言列表
+            if (!error) renderMsg();
+        }
+    })
     })
 }
 
@@ -167,6 +216,9 @@ submitBtn.onclick = async function(){
 
     if(error){
         alert("提交失败："+error.message);
+        // 失败后解锁按钮，不然就锁死了
+        submitBtn.disabled = false;
+        submitBtn.innerText = "提交留言";
         return;
     }
     alert('留言提交成功！');
