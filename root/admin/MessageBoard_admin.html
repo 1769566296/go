@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>留言管理面板</title>
+    <link rel="icon" href="https://pic2.ziyuan.wang/user/Ayang/2026/03/icon_f312f1cc70b04.ico">
+    <link rel="stylesheet" href="./css/home.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .box {
+            max-width: 90%;
+            margin: 30px auto;
+            font-family: "楷体";
+        }
+        .pwd-box {
+            border: 1px solid #ac8655;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .control-bar {
+            display: flex;
+            gap:10px;
+            flex-wrap: wrap;
+            margin:15px 0;
+        }
+        .msg-item {
+            border: 1px solid #ac8655;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+            color: #a37e4c;
+        }
+        .msg-top-tag {
+            color: #ff3333;
+            border: 1px solid #ff3333;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+        .msg-name{
+            font-weight:bold;
+            color:#6625cc;
+        }
+        .msg-time{
+            font-size:12px;
+            color:#888;
+            margin-left:10px;
+        }
+        .opt-btn {
+            margin:4px;
+            padding:4px 10px;
+            font-size:14px;
+        }
+        .del-btn {
+            background:#f44336;
+        }
+        .top-btn {
+            background:#ff9800;
+        }
+        input,select {
+            padding:8px;
+            width:200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>留言管理面板</h1>
+        <a href="./message.html">← 返回留言板</a>
+        <hr>
+
+        <!-- 管理员密码登录区域 -->
+        <div class="pwd-box" id="loginBox">
+            <h3>管理员身份验证</h3>
+            <input type="password" id="adminPwd" placeholder="输入管理用户">
+            <button id="loginBtn">登录</button>
+        </div>
+
+        <!-- 管理操作区域（密码正确才显示） -->
+        <div id="adminPanel" style="display:none;">
+            <div class="control-bar">
+                <div>每页条数：
+                    <input type="number" id="pageSize" value="10" min="1">
+                    <button id="changePageSize">确认分页</button>
+                </div>
+                <div>排序方式：
+                    <select id="sortType">
+                        <option value="top,created_at">置顶优先+最新</option>
+                        <option value="created_at">仅时间最新</option>
+                        <option value="like_count">点赞最多</option>
+                    </select>
+                    <button id="changeSort">切换排序</button>
+                </div>
+            </div>
+            <hr>
+            <h3>留言列表（可删除/置顶）</h3>
+            <div id="adminMsgList">加载中...</div>
+        </div>
+    </div>
+
+<script>
+const SUPABASE_URL = "https://vdmuxkapemtopjmwnpvb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_GUySM7Ho51-9XwDPn_UJjw_Bgl0nxJ0";
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// DOM元素
+const loginBox = document.getElementById('loginBox');
+const adminPanel = document.getElementById('adminPanel');
+const adminPwd = document.getElementById('adminPwd');
+const loginBtn = document.getElementById('loginBtn');
+const adminMsgList = document.getElementById('adminMsgList');
+const pageSize = document.getElementById('pageSize');
+const changePageSize = document.getElementById('changePageSize');
+const sortType = document.getElementById('sortType');
+const changeSort = document.getElementById('changeSort');
+
+// 全局分页、排序参数
+let limit = 10;
+let sortRule = "is_top,created_at";
+
+// 密码校验逻辑
+loginBtn.onclick = async function () {
+    const inputPwd = adminPwd.value.trim();
+    const { data } = await sb.from('admin_info').select('admin_pwd');
+    const realPwd = data[0].admin_pwd;
+    if(inputPwd === realPwd) {
+        loginBox.style.display = 'none';
+        adminPanel.style.display = 'block';
+        renderAdminMsg();
+    } else {
+        alert("密码错误，无法进入管理面板");
+    }
+}
+
+// 渲染管理端留言列表
+async function renderAdminMsg() {
+    adminMsgList.innerText = "加载中...";
+    let query = sb.from('messages').select('*');
+    // 不同排序逻辑
+    if(sortRule === "is_top,created_at") {
+        query = query.order('is_top', {ascending:false}).order('created_at', {ascending:false});
+    } else if(sortRule === "created_at") {
+        query = query.order('created_at', {ascending:false});
+    } else if(sortRule === "like_count") {
+        query = query.order('like_count', {ascending:false});
+    }
+    // 分页截取数据
+    const { data, error } = await query.range(0, limit - 1);
+
+    if(error) {
+        adminMsgList.innerHTML = `<p style="color:red">加载失败</p>`;
+        return;
+    }
+    if(data.length === 0) {
+        adminMsgList.innerHTML = "<p>暂无留言</p>";
+        return;
+    }
+    adminMsgList.innerHTML = "";
+    data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'msg-item';
+        const time = new Date(item.created_at).toLocaleString();
+        div.innerHTML = `
+            <div>
+                ${item.is_top ? '<span class="msg-top-tag">置顶</span>' : ''}
+                <span class="msg-name">${item.nickname}</span>
+                <span class="msg-time">${time}</span>
+                <span>点赞：${item.like_count}</span>
+            </div>
+            <p>${item.content}</p>
+            <div>
+                <button class="opt-btn top-btn" data-id="${item.id}" data-top="${item.is_top}">
+                    ${item.is_top ? '取消置顶' : '设为置顶'}
+                </button>
+                <button class="opt-btn del-btn" data-id="${item.id}">删除留言</button>
+            </div>
+        `;
+        adminMsgList.appendChild(div);
+    })
+
+    // 绑定置顶、删除按钮事件
+    document.querySelectorAll('.top-btn').forEach(btn => {
+        btn.onclick = async function() {
+            const id = this.dataset.id;
+            const nowTop = this.dataset.top === "true";
+            await sb.from('messages').update({is_top: !nowTop}).eq('id', id);
+            renderAdminMsg();
+        }
+    })
+    document.querySelectorAll('.del-btn').forEach(btn => {
+        btn.onclick = async function() {
+            if(!confirm("确定永久删除这条留言？删除后无法恢复！")) return;
+            const id = this.dataset.id;
+            await sb.from('messages').delete().eq('id', id);
+            renderAdminMsg();
+        }
+    })
+}
+
+// 修改每页显示条数
+changePageSize.onclick = function() {
+    limit = Number(pageSize.value);
+    renderAdminMsg();
+}
+
+// 切换排序方式
+changeSort.onclick = function() {
+    sortRule = sortType.value;
+    renderAdminMsg();
+}
+</script>
+</body>
+</html>
