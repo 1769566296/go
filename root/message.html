@@ -109,12 +109,14 @@
             </div>
             <button id="submitBtn">提交留言</button>
         </div>
+        <hr style="margin:30px 0;">
+    
         <!-- ↓添加弹性盒子 -->
         <div style="display:flex;justify-content:space-between;align-items:center;">
             <!-- 管理面板入口 -->
             <a href="./admin/MessageBoard_admin.html" style="font-size:16px;font-weight:bold;">留言管理面板</a>
         </div>
-        <hr style="margin:30px 0;">
+
         <h2>全部云端留言</h2>
         <div id="msgList">加载中...</div>
     </div>
@@ -165,7 +167,7 @@ async function renderMsg() {
         </div>
         <p>${item.content}</p>
         <button class="like-btn" data-id="${item.id}" data-like="${item.like_count}">
-            👍 点赞 <span class="like-num">${item.like_count}</span>
+            点赞: <span class="like-num">${item.like_count}</span>
         </button>
     `;
         
@@ -203,10 +205,16 @@ submitBtn.onclick = async function(){
     // 简单表单校验
     if(!nameVal){
         alert('请填写昵称！');
+        // 解锁按钮
+        submitBtn.disabled = false;
+        submitBtn.innerText = "提交留言";
         return;
     }
     if(!textVal){
         alert('请填写留言内容！');
+        // 解锁按钮
+        submitBtn.disabled = false;
+        submitBtn.innerText = "提交留言";
         return;
     }
 
