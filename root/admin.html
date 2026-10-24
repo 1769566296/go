@@ -8,6 +8,8 @@
     <link rel="icon" href="https://pic2.ziyuan.wang/user/Ayang/2026/03/icon_f312f1cc70b04.ico">
     <link rel="stylesheet" href="./css/home.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -265,6 +267,79 @@
             padding: 25px 0;
             font-size: 14px;
         }
+
+        /* Markdown 渲染排版 */
+        .markdown-body p { margin: 0 0 8px; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+            margin: 10px 0 8px; font-size: 15px; font-weight: bold; color: #334155;
+        }
+        .markdown-body ul, .markdown-body ol { margin: 6px 0; padding-left: 22px; }
+        .markdown-body blockquote {
+            margin: 8px 0; padding: 6px 12px; border-left: 3px solid #93c5fd;
+            background: rgba(219, 234, 254, 0.35); color: #64748b; border-radius: 0 6px 6px 0;
+        }
+        .markdown-body code {
+            background: rgba(148, 163, 184, 0.18); padding: 1px 6px; border-radius: 4px;
+            font-family: Consolas, Monaco, monospace; font-size: 13px; color: #db2777;
+        }
+        .markdown-body pre {
+            background: #1e293b; color: #e2e8f0; padding: 12px 14px; border-radius: 8px;
+            overflow-x: auto; margin: 8px 0;
+        }
+        .markdown-body pre code { background: transparent; color: inherit; padding: 0; }
+        .markdown-body a { color: #3b82f6; text-decoration: underline; }
+        .markdown-body img { max-width: 100%; border-radius: 8px; margin: 6px 0; }
+        .markdown-body hr { border: none; border-top: 1px dashed #cbd5e1; margin: 10px 0; }
+        .markdown-body table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+        .markdown-body th, .markdown-body td { border: 1px solid #cbd5e1; padding: 5px 10px; }
+        .markdown-body th { background: rgba(148, 163, 184, 0.15); }
+
+        /* 楼中楼 */
+        .reply-count-badge {
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 4px;
+            background: #eff6ff;
+            color: #3b82f6;
+            cursor: pointer;
+        }
+        .replies {
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 10px;
+            padding: 4px 14px;
+        }
+        .reply-item {
+            display: flex;
+            padding: 9px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .reply-item:last-child { border-bottom: none; }
+        .reply-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: linear-gradient(135deg, #fbbf24, #f97316);
+            flex-shrink: 0; margin-right: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 11px; font-weight: bold;
+        }
+        .reply-body { flex: 1; min-width: 0; }
+        .reply-meta {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;
+        }
+        .reply-nick { font-size: 13px; color: #334155; font-weight: bold; }
+        .reply-to { font-size: 12px; color: #64748b; }
+        .reply-time { font-size: 11px; color: #94a3b8; }
+        .reply-content {
+            font-size: 13px; line-height: 1.7; color: #475569; word-break: break-word;
+        }
+        .reply-del {
+            background: #fee2e2; color: #dc2626; border: none; border-radius: 4px;
+            font-size: 11px; padding: 2px 8px; cursor: pointer; font-family: inherit;
+            margin-left: 6px;
+        }
+        .empty-replies { font-size: 12px; color: #94a3b8; padding: 8px 0; }
     </style>
 </head>
 
@@ -341,6 +416,21 @@
             });
         }
 
+        // Markdown 渲染：marked 解析 + DOMPurify 过滤，防止 XSS
+        if (typeof marked !== 'undefined') marked.setOptions({ breaks: true, gfm: true });
+        function renderMd(text) {
+            try {
+                return DOMPurify.sanitize(marked.parse(String(text ?? '')));
+            } catch (err) {
+                return esc(text).replace(/\n/g, '<br>');
+            }
+        }
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+            ));
+        }
+
 
         // ===== bcrypt加密密码校验 =====
         loginBtn.onclick = async function () {
@@ -399,24 +489,40 @@
             }
 
             adminMsgList.innerHTML = "";
+            const msgIds = data.map(i => i.id);
+            let replyCountMap = {};
+            if (msgIds.length) {
+                const { data: rc } = await sb
+                    .from('replies')
+                    .select('message_id')
+                    .in('message_id', msgIds);
+                (rc || []).forEach(r => {
+                    replyCountMap[r.message_id] = (replyCountMap[r.message_id] || 0) + 1;
+                });
+            }
+
             data.forEach(item => {
+                const rc = replyCountMap[item.id] || 0;
                 const div = document.createElement('div');
                 div.className = 'msg';
                 div.innerHTML = `
-            <div class="avatar">${firstChar(item.nickname)}</div>
+            <div class="avatar">${esc(firstChar(item.nickname))}</div>
             <div class="msg-body">
                 <div class="msg-meta">
-                    <span class="nickname">${item.nickname}</span>
+                    <span class="nickname">${esc(item.nickname)}</span>
+                    <span class="time">ID: ${esc(item.id)}</span>
                     ${item.is_top ? '<span class="top-badge">置顶</span>' : ''}
                     <span class="time">${fmtTime(item.created_at)}</span>
                     <span class="like-num">❤️ ${item.like_count || 0}</span>
+                    <span class="reply-count-badge" data-id="${item.id}" data-loaded="0">💬 回复 ${rc}</span>
                 </div>
-                <div class="msg-content">${item.content}</div>
+                <div class="msg-content markdown-body">${renderMd(item.content)}</div>
+                <div class="replies" id="admreplies-${item.id}" style="display:none;"></div>
                 <div class="msg-actions">
                     <button class="opt-btn top-btn" data-id="${item.id}" data-top="${item.is_top}">
                         ${item.is_top ? '取消置顶' : '设为置顶'}
                     </button>
-                    <button class="opt-btn del-btn" data-id="${item.id}">删除</button>
+                    <button class="opt-btn del-btn" data-id="${item.id}" data-nick="${esc(item.nickname)}" data-replies="${rc}">删除</button>
                 </div>
             </div>
         `;
@@ -432,15 +538,81 @@
                     renderAdminMsg(currentPage);
                 }
             })
+            document.querySelectorAll('.reply-count-badge').forEach(btn => {
+                btn.onclick = async function () {
+                    const id = this.dataset.id;
+                    const box = document.getElementById('admreplies-' + id);
+                    if (box.style.display === 'none') {
+                        box.style.display = 'block';
+                        if (this.dataset.loaded !== "1") {
+                            this.dataset.loaded = "1";
+                            await loadAdminReplies(id);
+                        }
+                    } else {
+                        box.style.display = 'none';
+                    }
+                }
+            })
             document.querySelectorAll('.del-btn').forEach(btn => {
                 btn.onclick = async function () {
-                    if (!confirm("确定永久删除这条留言？")) return;
-                    await sb.from('messages').delete().eq('id', this.dataset.id);
+                    const id = this.dataset.id;
+                    const rc = Number(this.dataset.replies) || 0;
+                    const warn = rc > 0
+                        ? `这条留言下有 ${rc} 条楼中楼回复，将一并永久删除，确定？`
+                        : "确定永久删除这条留言？";
+                    if (!confirm(warn)) return;
+                    await sb.from('replies').delete().eq('message_id', id);
+                    await sb.from('messages').delete().eq('id', id);
                     renderAdminMsg(currentPage);
                 }
             })
 
             renderPagination();
+        }
+
+        // 加载某条留言下的楼中楼回复（管理端）
+        async function loadAdminReplies(msgId) {
+            const box = document.getElementById('admreplies-' + msgId);
+            box.innerHTML = '<div class="empty-replies">加载中...</div>';
+            const { data } = await sb
+                .from('replies')
+                .select('*')
+                .eq('message_id', msgId)
+                .order('created_at', { ascending: true });
+
+            if (!data || data.length === 0) {
+                box.innerHTML = '<div class="empty-replies">暂无回复</div>';
+                return;
+            }
+            const byId = {};
+            data.forEach(r => { byId[r.id] = r; });
+
+            box.innerHTML = '';
+            data.forEach(r => {
+                const parent = r.parent_id ? byId[r.parent_id] : null;
+                const item = document.createElement('div');
+                item.className = 'reply-item';
+                item.innerHTML = `
+                    <div class="reply-avatar">${esc(firstChar(r.nickname))}</div>
+                    <div class="reply-body">
+                        <div class="reply-meta">
+                            <span class="reply-nick">${esc(r.nickname)}</span>
+                            ${parent ? `<span class="reply-to">回复 @${esc(parent.nickname)}</span>` : ''}
+                            <span class="reply-time">${fmtTime(r.created_at)}</span>
+                            <button class="reply-del" data-id="${r.id}">删除</button>
+                        </div>
+                        <div class="reply-content markdown-body">${renderMd(r.content)}</div>
+                    </div>
+                `;
+                box.appendChild(item);
+            });
+            box.querySelectorAll('.reply-del').forEach(btn => {
+                btn.onclick = async function () {
+                    if (!confirm("确定删除这条回复？")) return;
+                    await sb.from('replies').delete().eq('id', this.dataset.id);
+                    await loadAdminReplies(msgId);
+                }
+            })
         }
 
         function renderPagination() {
