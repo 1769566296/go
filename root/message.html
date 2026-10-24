@@ -7,6 +7,8 @@
     <link rel="icon" href="https://pic2.ziyuan.wang/user/Ayang/2026/03/icon_f312f1cc70b04.ico">
     <link rel="stylesheet" href="./css/home.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -271,6 +273,255 @@
             padding: 30px 0;
             font-size: 14px;
         }
+
+        /* Markdown 渲染排版 */
+        .msg-content.markdown-body p {
+            margin: 0 0 8px;
+        }
+        .msg-content.markdown-body p:last-child {
+            margin-bottom: 0;
+        }
+        .msg-content.markdown-body h1,
+        .msg-content.markdown-body h2,
+        .msg-content.markdown-body h3,
+        .msg-content.markdown-body h4 {
+            margin: 10px 0 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #334155;
+        }
+        .msg-content.markdown-body ul,
+        .msg-content.markdown-body ol {
+            margin: 6px 0;
+            padding-left: 22px;
+        }
+        .msg-content.markdown-body blockquote {
+            margin: 8px 0;
+            padding: 6px 12px;
+            border-left: 3px solid #93c5fd;
+            background: rgba(219, 234, 254, 0.35);
+            color: #64748b;
+            border-radius: 0 6px 6px 0;
+        }
+        .msg-content.markdown-body code {
+            background: rgba(148, 163, 184, 0.18);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 13px;
+            color: #db2777;
+        }
+        .msg-content.markdown-body pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 12px 14px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .msg-content.markdown-body pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-size: 13px;
+        }
+        .msg-content.markdown-body a {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+        .msg-content.markdown-body img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 6px 0;
+        }
+        .msg-content.markdown-body hr {
+            border: none;
+            border-top: 1px dashed #cbd5e1;
+            margin: 10px 0;
+        }
+        .msg-content.markdown-body table {
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+        .msg-content.markdown-body th,
+        .msg-content.markdown-body td {
+            border: 1px solid #cbd5e1;
+            padding: 5px 10px;
+        }
+        .msg-content.markdown-body th {
+            background: rgba(148, 163, 184, 0.15);
+        }
+
+        /* 楼中楼 */
+        .reply-toggle {
+            background: transparent;
+            border: none;
+            color: #3b82f6;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        .reply-toggle:hover {
+            background: #eff6ff;
+        }
+        .msg-footer {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 4px;
+        }
+        .replies {
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 10px;
+            padding: 4px 14px;
+        }
+        .replies .loading {
+            padding: 12px 0;
+            font-size: 13px;
+        }
+        .reply-item {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .reply-item:last-child {
+            border-bottom: none;
+        }
+        .reply-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fbbf24, #f97316);
+            flex-shrink: 0;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .reply-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .reply-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+        .reply-nick {
+            font-size: 13px;
+            color: #334155;
+            font-weight: bold;
+        }
+        .reply-to {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .reply-time {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .reply-content {
+            font-size: 13.5px;
+            line-height: 1.7;
+            color: #475569;
+            word-break: break-word;
+        }
+        .reply-actions {
+            margin-top: 2px;
+        }
+        .reply-quote-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .reply-quote-btn:hover {
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+        .reply-form {
+            display: none;
+            margin-top: 10px;
+        }
+        .reply-form.open {
+            display: block;
+        }
+        .reply-form-head {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+        .reply-form-head .cancel-quote {
+            color: #ef4444;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        .reply-input-row {
+            display: flex;
+            gap: 8px;
+        }
+        .reply-input-row input {
+            flex: 0 0 130px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            background: rgba(255, 255, 255, 0.8);
+            color: #334155;
+        }
+        .reply-input-row textarea {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            resize: vertical;
+            min-height: 34px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #334155;
+        }
+        .reply-input-row input:focus,
+        .reply-input-row textarea:focus {
+            border-color: #3b82f6;
+        }
+        .reply-submit {
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            color: #fff;
+            border: none;
+            padding: 0 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .reply-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .md-tip {
+            font-size: 12px;
+            color: #94a3b8;
+            margin: -8px 0 14px;
+        }
     </style>
 </head>
 <body>
@@ -289,8 +540,9 @@
                 <input type="text" id="username" placeholder="你的昵称">
             </div>
             <div class="input-line">
-                <textarea id="content" placeholder="写下想说的话..."></textarea>
+                <textarea id="content" placeholder="写下想说的话...支持 Markdown 语法"></textarea>
             </div>
+            <div class="md-tip">支持 Markdown：**加粗**、*斜体*、`代码`、&gt; 引用、- 列表、[链接](url)、图片、表格</div>
             <button id="submitBtn" class="btn-primary">发布留言</button>
         </div>
 
@@ -312,6 +564,22 @@ const SUPABASE_URL = "https://vdmuxkapemtopjmwnpvb.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_GUySM7Ho51-9XwDPn_UJjw_Bgl0nxJ0";
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Markdown 渲染：marked 解析 + DOMPurify 过滤，防止 XSS
+if (typeof marked !== 'undefined') marked.setOptions({ breaks: true, gfm: true });
+function renderMd(text) {
+    try {
+        return DOMPurify.sanitize(marked.parse(String(text ?? '')));
+    } catch (err) {
+        // CDN 未加载成功时降级为纯文本 + 换行
+        return esc(text).replace(/\n/g, '<br>');
+    }
+}
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+}
 
 const username = document.getElementById('username');
 const content = document.getElementById('content');
@@ -373,19 +641,35 @@ async function renderMsg(page = 1) {
     data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'msg';
+        div.dataset.msgid = item.id;
         div.innerHTML = `
-            <div class="avatar">${firstChar(item.nickname)}</div>
+            <div class="avatar">${esc(firstChar(item.nickname))}</div>
             <div class="msg-body">
                 <div class="msg-meta">
-                    <span class="nickname">${item.nickname}</span>
+                    <span class="nickname">${esc(item.nickname)}</span>
                     ${item.is_top ? '<span class="top-badge">置顶</span>' : ''}
                     <span class="time">${fmtTime(item.created_at)}</span>
                 </div>
-                <div class="msg-content">${item.content}</div>
+                <div class="msg-content markdown-body">${renderMd(item.content)}</div>
                 <div class="msg-footer">
+                    <button class="reply-toggle" data-id="${item.id}">💬 回复 / 查看</button>
                     <button class="like-btn" data-id="${item.id}" data-like="${item.like_count || 0}">
                         ❤️ ${item.like_count || 0}
                     </button>
+                </div>
+                <div class="replies" id="replies-${item.id}" style="display:none;">
+                    <div class="reply-list" id="replylist-${item.id}"></div>
+                    <div class="reply-form" id="replyform-${item.id}">
+                        <div class="reply-form-head">
+                            <span id="quotetag-${item.id}">发表回复</span>
+                            <span class="cancel-quote" id="cancelquote-${item.id}" style="display:none;">取消引用</span>
+                        </div>
+                        <div class="reply-input-row">
+                            <input type="text" id="replyname-${item.id}" placeholder="你的昵称">
+                            <textarea id="replytext-${item.id}" placeholder="写下回复...支持 Markdown"></textarea>
+                            <button class="reply-submit" data-id="${item.id}">回复</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -405,8 +689,127 @@ async function renderMsg(page = 1) {
         }
     })
 
+    // 绑定楼中楼：展开/收起 + 提交回复
+    document.querySelectorAll('.reply-toggle').forEach(btn => {
+        btn.onclick = function () {
+            const id = this.dataset.id;
+            const box = document.getElementById('replies-' + id);
+            if (box.style.display === 'none') {
+                box.style.display = 'block';
+                document.getElementById('replyform-' + id).classList.add('open');
+                loadReplies(id);
+            } else {
+                box.style.display = 'none';
+                document.getElementById('replyform-' + id).classList.remove('open');
+            }
+        }
+    })
+    document.querySelectorAll('.reply-submit').forEach(bindReplySubmit);
+
     renderPagination();
 }
+
+// ===== 楼中楼：加载某条留言下的全部回复 =====
+async function loadReplies(msgId) {
+    const listBox = document.getElementById('replylist-' + msgId);
+    listBox.innerHTML = '<div class="loading">回复加载中...</div>';
+
+    const { data, error } = await sb
+        .from('replies')
+        .select('*')
+        .eq('message_id', msgId)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        listBox.innerHTML = '<div class="loading" style="color:#ef4444;">回复加载失败</div>';
+        return;
+    }
+    if (!data || data.length === 0) {
+        listBox.innerHTML = '<div class="loading">还没有回复，抢个沙发～</div>';
+        return;
+    }
+
+    const byId = {};
+    data.forEach(r => { byId[r.id] = r; });
+
+    listBox.innerHTML = '';
+    data.forEach(r => {
+        const parent = r.parent_id ? byId[r.parent_id] : null;
+        const div = document.createElement('div');
+        div.className = 'reply-item';
+        div.innerHTML = `
+            <div class="reply-avatar">${esc(firstChar(r.nickname))}</div>
+            <div class="reply-body">
+                <div class="reply-meta">
+                    <span class="reply-nick">${esc(r.nickname)}</span>
+                    ${parent ? `<span class="reply-to">回复 @${esc(parent.nickname)}</span>` : ''}
+                    <span class="reply-time">${fmtTime(r.created_at)}</span>
+                </div>
+                <div class="reply-content markdown-body">${renderMd(r.content)}</div>
+                <div class="reply-actions">
+                    <button class="reply-quote-btn" data-msg="${msgId}" data-id="${r.id}" data-nick="${esc(r.nickname)}">回复</button>
+                </div>
+            </div>
+        `;
+        listBox.appendChild(div);
+    });
+
+    // 点击某条回复的"回复"，把引用目标设为该回复
+    listBox.querySelectorAll('.reply-quote-btn').forEach(btn => {
+        btn.onclick = function () {
+            const mid = this.dataset.msg;
+            quoteState[mid] = { id: this.dataset.id, nick: this.dataset.nick };
+            const tag = document.getElementById('quotetag-' + mid);
+            tag.innerText = '回复 @' + this.dataset.nick;
+            document.getElementById('cancelquote-' + mid).style.display = 'inline';
+            document.getElementById('replytext-' + mid).focus();
+        }
+    })
+}
+
+// 当前每条留言的引用目标：{ [msgId]: {id, nick} }
+const quoteState = {};
+
+function bindReplySubmit(btn) {
+    btn.onclick = async function () {
+        const msgId = this.dataset.id;
+        const nameEl = document.getElementById('replyname-' + msgId);
+        const textEl = document.getElementById('replytext-' + msgId);
+        const nameVal = nameEl.value.trim() || username.value.trim();
+        const textVal = textEl.value.trim();
+        if (!nameVal) { alert('请填写昵称！'); return; }
+        if (!textVal) { alert('请填写回复内容！'); return; }
+
+        btn.disabled = true;
+        btn.innerText = '发送中...';
+        const payload = {
+            message_id: msgId,
+            nickname: nameVal,
+            content: textVal,
+            parent_id: quoteState[msgId] ? quoteState[msgId].id : null
+        };
+        const { error } = await sb.from('replies').insert([payload]);
+        btn.disabled = false;
+        btn.innerText = '回复';
+        if (error) { alert('回复失败：' + error.message); return; }
+        textEl.value = '';
+        clearQuote(msgId);
+        loadReplies(msgId);
+    }
+}
+
+function clearQuote(msgId) {
+    quoteState[msgId] = null;
+    document.getElementById('quotetag-' + msgId).innerText = '发表回复';
+    document.getElementById('cancelquote-' + msgId).style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('cancel-quote')) {
+        const id = e.target.id.replace('cancelquote-', '');
+        clearQuote(id);
+    }
+});
 
 // 分页按钮
 function renderPagination() {
